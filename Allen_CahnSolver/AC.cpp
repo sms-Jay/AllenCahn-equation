@@ -330,7 +330,7 @@ class AC{
 };
 
 int main(){
-    double dt = 1e10;
+    double dt = 1e1;
     int Nx = 100;
     int Ny = 100;
     int Nt = 30;
