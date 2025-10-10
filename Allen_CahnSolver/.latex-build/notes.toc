@@ -1,0 +1,5 @@
+\contentsline {section}{\numberline {1}算法设计}{1}{section.1}%
+\contentsline {subsection}{\numberline {1.1}法一：近似}{2}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}法二：Newton}{2}{subsection.1.2}%
+\contentsline {section}{\numberline {2}数值算例}{2}{section.2}%
+\contentsline {subsection}{\numberline {2.1}算例一}{2}{subsection.2.1}%
