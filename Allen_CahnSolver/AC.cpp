@@ -17,7 +17,13 @@ double ini_3(double x, double y){
     return (double) rand() / (RAND_MAX + 1.0);
 }
 double F(double t,double theta){
-    return t*log(t)+(1-t)*log(1-t)+theta*t*(1-t);
+    if (t>0 && t<1e-16) return (1-t)*log(1-t)+theta*t*(1-t);
+    else if (t<1 && t>1-1e-16) return t*log(t)+theta*t*(1-t);
+    else if (t>1e-16 && t<1-1e-16) return t*log(t)+(1-t)*log(1-t)+theta*t*(1-t);
+    else{
+        cout<<"Wrong range!"<<endl;
+        return 0.0;
+    }
 }
 void saveDataToFile(const vector<vector<vector<double>>>& u, const string& filename) {
     ofstream outFile(filename);
@@ -70,6 +76,7 @@ class AC{
         int Ny;
         double dy;
         double dy2;
+        double dxdy;
         int N;
         double ep;
         double ep2;
@@ -84,6 +91,7 @@ class AC{
             dx2 = dx*dx;
             dy = 2.0/Ny;
             dy2 = dy*dy;
+            dxdy=dx*dy;
             ep2 = ep*ep;
             N = Nx*Ny;
             u.resize(Nt+1,vector<double>(N,0.0));
@@ -94,7 +102,7 @@ class AC{
                     double x = i*dx-1.0;
                     double y = j*dy-1.0;
                     int idx = i*Ny+j;
-                    u[0][idx] = ini_3(x,y);
+                    u[0][idx] = ini_1(x,y);
                 }
             }
         }
@@ -120,9 +128,9 @@ class AC{
                     int idx_im = im*Ny+j;
                     int idx_jp = i*Ny+jp;
                     int idx_jm = i*Ny+jm;
-                    double gx = U[idx_ip]-U[idx];// 这里用前向一阶差分近似微分
-                    double gy = U[idx_jp]-U[idx];
-                    E += 0.5*ep2*(gx*gx+gy*gy) + dx2*F(U[idx],theta);
+                    double gx = (U[idx_ip]-U[idx_im])/(2*dx);// 这里用中心差分近似梯度
+                    double gy = (U[idx_jp]-U[idx_jm])/(2*dy);
+                    E += dxdy*(0.5*ep2*(gx*gx+gy*gy) + F(U[idx],theta));
                 }
             }
             return E;
@@ -159,7 +167,7 @@ class AC{
             }
             return b;
         }
-
+        // 对称正定方程，考虑换成FFT或者PCG
         vector<double> CG(const vector<double>& b, vector<double>& x, double tol, double rho, int max_iter){
             vector<double> r = b;
             vector<double> p = r;
@@ -194,22 +202,24 @@ class AC{
         
         double newton(const double ini, const double u1, const double un, const double y, const double rho){
             double u = ini;
-            for(int iter=1;iter<=1000;iter++){
+            for(int iter=1;iter<=100;iter++){
                 double fu = log(u) - log(1-u) + theta*(1-2*un) - y - rho*(u1 - u);
                 double dfu = 1.0/(u*(1-u)) + rho;
                 double u_new = u - fu/dfu;
-                if(fabs(u_new - u) < 1e-8){
+                if(fabs(f(u_new,u1,un,y,rho)) < 1e-8){
                     // cout<<"Newton converge at "<<iter<<endl;
                     return u_new;
                 }
-                if(iter == 1000) cout<<"Newton not converge."<<endl;
+                if(iter == 100) {
+                    cout<<"Newton not converge."<<endl;
+                }
                 u = u_new;
             }
             return u;
         }
          
         double f(const double u2, const double u1, const double un, const double y, const double rho){
-            return log(u2) - log(1-u2) + theta*(1-2*un) - y - rho*(u1 - u2);
+            return log(u2/(1-u2)) + theta*(1-2*un) - y - rho*(u1 - u2);
         }
 
         double solveu2(const double u2, const double u1, const double un, const double y, const double rho){
@@ -228,7 +238,7 @@ class AC{
             else if(c < 0){
                 // 在（0.5，1）
                 while(c<0){
-                    ini = (ini + 1.0)/2.0;
+                    ini = (1.0+ini)/2.0;
                     c = f(ini, u1, un, y, rho);
                 }
                 return newton(ini, u1, un, y, rho);
@@ -237,9 +247,9 @@ class AC{
         }
 
         vector<double> ADMM(vector<double>& Un, int max_iter, double tolerance){
-            double rho = 1;// 惩罚参数
-            double tau = 2.0;// 步长参数
-            double mu = 10;// 动态调节惩罚参数
+            double rho = 1.0;// 惩罚参数
+            double tau = 1.0;// 步长参数
+            double mu = 5;// 动态调节惩罚参数
             double gamma_p = 2;
             double gamma_d = 2;
 
@@ -253,7 +263,7 @@ class AC{
             for(int k=1;k<=max_iter;k++){
                 // 更新U1
                 auto b = rhs(Un, Y, rho, U_2);
-                U_1 = CG(b, U_1, 1e-5, rho, 1e5);
+                U_1 = CG(b, U_1, 1e-8, rho, 1e5);
                 // 更新U2 Y 误差
                 double r = 0.0;//原始可行性
                 double s = 0.0;//对偶可行性
@@ -274,8 +284,9 @@ class AC{
                 U_2 = U_2_new;
                 r=sqrt(r);
                 s=sqrt(s);
+                // cout<<max(r,s)<<endl;
                 if(max(r,s) < tolerance) {
-                    Un = U_1;
+                    Un = U_2;
                     cout<<"ADMM converge at "<<k<<endl;
                     break;
                 }
@@ -288,7 +299,8 @@ class AC{
                     rho = rho/gamma_d;
                 }
                 else rho = rho;
-                
+                rho=max(min(1.0,rho),6.0);
+
                 if(k==max_iter){
                     Un = U_2;
                     cout<<"ADMM not converge."<<endl;
@@ -302,7 +314,7 @@ class AC{
                 auto Un = u[n];
                 energy[n]=Energy(Un);
                 cout<<energy[n]<<endl;
-                u[n+1] = ADMM(Un,1e5,1e-5);
+                u[n+1] = ADMM(Un,1e6,1e-3);
             }
             energy[Nt]=Energy(u[Nt]);
             cout<<energy[Nt]<<endl;
@@ -330,7 +342,7 @@ class AC{
 };
 
 int main(){
-    double dt = 1e10;
+    double dt = 1e2;
     int Nx = 100;
     int Ny = 100;
     int Nt = 30;

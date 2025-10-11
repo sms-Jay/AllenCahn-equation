@@ -1,39 +1,39 @@
-# -*- coding: gbk -*-
+# -*- coding: utf8 -*-
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import os
 
 def load_data_from_file(filename):
-    """´ÓÎÄ¼ş¼ÓÔØÊı¾İ"""
+    """ä»æ–‡ä»¶åŠ è½½æ•°æ®"""
     with open(filename, 'r') as f:
-        # ¶ÁÈ¡ÔªÊı¾İ
+        # è¯»å–å…ƒæ•°æ®
         metadata = f.readline().split()
         time_steps = int(metadata[0])
         x_size = int(metadata[1])
         y_size = int(metadata[2])
         
-        # ¶ÁÈ¡x×ø±ê
+        # è¯»å–xåæ ‡
         x_data = np.array([float(x) for x in f.readline().split()])/50-1.0
         
-        # ¶ÁÈ¡y×ø±ê
+        # è¯»å–yåæ ‡
         y_data = np.array([float(y) for y in f.readline().split()])/50-1.0
         
-        # ³õÊ¼»¯uÊı×é
+        # åˆå§‹åŒ–uæ•°ç»„
         u_data = np.zeros((time_steps, x_size, y_size))
         
-        # ¶ÁÈ¡uÊı¾İ
+        # è¯»å–uæ•°æ®
         current_t = -1
         current_x = 0
         
         for line in f:
             line = line.strip()
             if line.startswith('t='):
-                # ĞÂÊ±¼ä²½
+                # æ–°æ—¶é—´æ­¥
                 current_t = int(line[2:])
                 current_x = 0
             elif line:
-                # Êı¾İĞĞ
+                # æ•°æ®è¡Œ
                 values = [float(v) for v in line.split()]
                 u_data[current_t, current_x, :] = values
                 current_x += 1
@@ -41,23 +41,23 @@ def load_data_from_file(filename):
     return u_data, x_data, y_data
 
 def create_heatmaps(u, x, y, time_indices=None, time=0):
-    """´´½¨ÈÈÍ¼"""
+    """åˆ›å»ºçƒ­å›¾"""
     if time_indices is None:
-        time_indices = range(min(5, u.shape[0]))  # Ä¬ÈÏÏÔÊ¾Ç°5¸öÊ±¼ä²½
+        time_indices = range(min(5, u.shape[0]))  # é»˜è®¤æ˜¾ç¤ºå‰5ä¸ªæ—¶é—´æ­¥
     
     n_plots = len(time_indices)
     
-    # ´´½¨×ÓÍ¼
+    # åˆ›å»ºå­å›¾
     fig, axes = plt.subplots(1, n_plots, figsize=(5*n_plots, 4))
     
     if n_plots == 1:
         axes = [axes]
     
-    # È·¶¨ÑÕÉ«·¶Î§£¨ËùÓĞÍ¼Ê¹ÓÃÏàÍ¬µÄÑÕÉ«·¶Î§£©
+    # ç¡®å®šé¢œè‰²èŒƒå›´ï¼ˆæ‰€æœ‰å›¾ä½¿ç”¨ç›¸åŒçš„é¢œè‰²èŒƒå›´ï¼‰
     vmin = np.min(u)
     vmax = np.max(u)
     
-    # ´´½¨Ã¿¸öÊ±¼ä²½µÄÈÈÍ¼
+    # åˆ›å»ºæ¯ä¸ªæ—¶é—´æ­¥çš„çƒ­å›¾
     images = []
     for i, t in enumerate(time_indices):
         im = axes[i].imshow(u[t], extent=[x[0], x[-1], y[0], y[-1]], 
@@ -68,7 +68,7 @@ def create_heatmaps(u, x, y, time_indices=None, time=0):
         axes[i].set_ylabel('y')
         images.append(im)
     
-    # Ìí¼ÓÑÕÉ«Ìõ
+    # æ·»åŠ é¢œè‰²æ¡
     plt.colorbar(images[0], ax=axes, shrink=0.6)
     
     plt.tight_layout()
@@ -77,52 +77,52 @@ def create_heatmaps(u, x, y, time_indices=None, time=0):
 
 
 def create_contour_plots(u, x, y, time_indices=None,time=1):
-    """´´½¨µÈ¸ßÏßÍ¼"""
+    """åˆ›å»ºç­‰é«˜çº¿å›¾"""
     if time_indices is None:
-        time_indices = range(min(5, u.shape[0]))  # Ä¬ÈÏÏÔÊ¾Ç°5¸öÊ±¼ä²½
+        time_indices = range(min(5, u.shape[0]))  # é»˜è®¤æ˜¾ç¤ºå‰5ä¸ªæ—¶é—´æ­¥
     
     n_plots = len(time_indices)
     
-    # ´´½¨×ÓÍ¼
+    # åˆ›å»ºå­å›¾
     fig, axes = plt.subplots(1, n_plots, figsize=(5*n_plots, 4))
     
     if n_plots == 1:
         axes = [axes]
     
-    # ´´½¨Íø¸ñ
+    # åˆ›å»ºç½‘æ ¼
     X, Y = np.meshgrid(x, y, indexing='ij')
     
-    # È·¶¨ÑÕÉ«·¶Î§£¨ËùÓĞÍ¼Ê¹ÓÃÏàÍ¬µÄÑÕÉ«·¶Î§£©
+    # ç¡®å®šé¢œè‰²èŒƒå›´ï¼ˆæ‰€æœ‰å›¾ä½¿ç”¨ç›¸åŒçš„é¢œè‰²èŒƒå›´ï¼‰
     vmin = np.min(u)
     vmax = np.max(u)
     
-    # ´´½¨Ã¿¸öÊ±¼ä²½µÄµÈ¸ßÏßÍ¼
+    # åˆ›å»ºæ¯ä¸ªæ—¶é—´æ­¥çš„ç­‰é«˜çº¿å›¾
     for i, t in enumerate(time_indices):
         contour = axes[i].contourf(X, Y, u[t], 20, cmap='viridis', vmin=vmin, vmax=vmax)
         axes[i].set_title(f't = {t}')
         axes[i].set_xlabel('x')
         axes[i].set_ylabel('y')
         
-        # Ìí¼ÓÑÕÉ«Ìõ
+        # æ·»åŠ é¢œè‰²æ¡
         plt.colorbar(contour, ax=axes[i])
     
     plt.tight_layout()
     plt.savefig(f"contour_plots_t_{time}.png", dpi=1000)
 
 def main():
-    """Ö÷º¯Êı"""
-    # ¼ÓÔØÊı¾İ
+    """ä¸»å‡½æ•°"""
+    # åŠ è½½æ•°æ®
     data_file = "H:/undergraduate/scientific research/Allen Cahn equation/Allen_CahnSolver/u_test_data.txt"
     
     if not os.path.exists(data_file):
-        print(f"Êı¾İÎÄ¼ş {data_file} ²»´æÔÚ")
-        print("ÇëÏÈÔËĞĞC++³ÌĞòÉú³ÉÊı¾İ")
+        print(f"æ•°æ®æ–‡ä»¶ {data_file} ä¸å­˜åœ¨")
+        print("è¯·å…ˆè¿è¡ŒC++ç¨‹åºç”Ÿæˆæ•°æ®")
         return
     
     u, x, y = load_data_from_file(data_file)
-    print(f"Êı¾İĞÎ×´: u({u.shape}), x({x.shape}), y({y.shape})")
+    print(f"æ•°æ®å½¢çŠ¶: u({u.shape}), x({x.shape}), y({y.shape})")
     
-    # Ñ¡ÔñÒª¿ÉÊÓ»¯µÄÊ±¼äµã
+    # é€‰æ‹©è¦å¯è§†åŒ–çš„æ—¶é—´ç‚¹
     for time in [0,10,20,30,40,50,60,70,80,90,100]:
 
         time_indices = [time]
