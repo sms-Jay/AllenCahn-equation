@@ -29,7 +29,7 @@ void saveDataToFile(const vector<vector<vector<double>>>& u, const string& filen
     ofstream outFile(filename);
     
     if (!outFile.is_open()) {
-        cerr << "无法打开文件: " << filename <<endl;
+        cerr << "Cannot Open File: " << filename <<endl;
         return;
     }
     
@@ -64,7 +64,7 @@ void saveDataToFile(const vector<vector<vector<double>>>& u, const string& filen
         }
     }
     outFile.close();
-    cout << "数据已保存到: " << filename << endl;
+    cout << "Data Saved to: " << filename << endl;
 }
 class AC{
     private:
@@ -102,7 +102,7 @@ class AC{
                     double x = i*dx-1.0;
                     double y = j*dy-1.0;
                     int idx = i*Ny+j;
-                    u[0][idx] = ini_1(x,y);
+                    u[0][idx] = ini_3(x,y);
                 }
             }
         }
@@ -128,7 +128,7 @@ class AC{
                     int idx_im = im*Ny+j;
                     int idx_jp = i*Ny+jp;
                     int idx_jm = i*Ny+jm;
-                    double gx = (U[idx_ip]-U[idx_im])/(2*dx);// 这里用中心差分近似梯度
+                    double gx = (U[idx_ip]-U[idx_im])/(2*dx);// 
                     double gy = (U[idx_jp]-U[idx_jm])/(2*dy);
                     E += dxdy*(0.5*ep2*(gx*gx+gy*gy) + F(U[idx],theta));
                 }
@@ -137,7 +137,7 @@ class AC{
         }
 
         vector<double> matrixVecProduct(const vector<double>& U, double rho){
-            // 计算（1/dt -ep^2 \Delta + rho)*U
+            // calculate（1/dt -ep^2 \Delta + rho)*U
             auto AU = U;
             for(int i=0;i<Nx;i++){
                 for(int j=0;j<Ny;j++){
@@ -167,7 +167,7 @@ class AC{
             }
             return b;
         }
-        // 对称正定方程，考虑换成FFT或者PCG
+        // Symmetric and Positive definenite, consider FFT or PCG
         vector<double> CG(const vector<double>& b, vector<double>& x, double tol, double rho, int max_iter){
             vector<double> r = b;
             vector<double> p = r;
@@ -224,11 +224,10 @@ class AC{
 
         double solveu2(const double u2, const double u1, const double un, const double y, const double rho){
             double ini = 0.5;
-            // 首先判断区间
+            // 
             double c = f(ini, u1, un, y, rho);
             if(c > 0){
-                // 在（0，0.5）
-                // 找初值
+                // in (0,0.5)
                 while(c>0){
                     ini /= 2.0;
                     c = f(ini, u1, un, y, rho);
@@ -236,7 +235,7 @@ class AC{
                 return newton(ini, u1, un, y, rho);
             }
             else if(c < 0){
-                // 在（0.5，1）
+                // in (0.5,1)
                 while(c<0){
                     ini = (1.0+ini)/2.0;
                     c = f(ini, u1, un, y, rho);
@@ -247,9 +246,9 @@ class AC{
         }
 
         vector<double> ADMM(vector<double>& Un, int max_iter, double tolerance){
-            double rho = 1.0;// 惩罚参数
-            double tau = 1.0;// 步长参数
-            double mu = 5;// 动态调节惩罚参数
+            double rho = 1.0;// penalty function:second order;
+            double tau = 2.0;// step_size of Y
+            double mu = 5;// dymanic adjustment
             double gamma_p = 2;
             double gamma_d = 2;
 
@@ -261,19 +260,21 @@ class AC{
             vector<double> Y(N, 0.0);
             
             for(int k=1;k<=max_iter;k++){
-                // 更新U1
+                // U1
                 auto b = rhs(Un, Y, rho, U_2);
                 U_1 = CG(b, U_1, 1e-8, rho, 1e5);
-                // 更新U2 Y 误差
-                double r = 0.0;//原始可行性
-                double s = 0.0;//对偶可行性
+                // U2 Y r s
+                double r = 0.0;//primal feasibility
+                double s = 0.0;//dual feasibility
                 for(int i=0;i<Nx;i++){
                     for(int j=0;j<Ny;j++){
                         int idx = i*Ny+j;
-                        // 近似化
+                        // Approximation way
                         // U_2_new[idx] = 1.0-1.0/(1+exp(Y[idx]-theta*(1-2*Un[idx])+rho*(U_1[idx]-U_2_new[idx])));
                         // U_2_new[idx] = (U_2_new[idx]+U_2_old[idx])/2.0;
-                        // 牛顿法
+
+
+                        // Newton way
                         U_2_new[idx] = solveu2(U_2[idx], U_1[idx], Un[idx], Y[idx], rho);
                         Y[idx] = Y[idx] + tau*rho*(U_1[idx]-U_2_new[idx]);
                         r += (U_1[idx]-U_2_new[idx])*(U_1[idx]-U_2_new[idx]);
@@ -290,7 +291,7 @@ class AC{
                     cout<<"ADMM converge at "<<k<<endl;
                     break;
                 }
-                //动态调节
+                // dymanic adjustment of rho
                 /*
                 if(r>mu*s){
                     rho = gamma_p*rho;
@@ -342,7 +343,7 @@ class AC{
 };
 
 int main(){
-    double dt = 1e2;
+    double dt = 1e10;
     int Nx = 100;
     int Ny = 100;
     int Nt = 30;
@@ -350,8 +351,7 @@ int main(){
     AC ACu(dt, Nt, Nx, Ny, ep);
     ACu.solve();
     auto u = ACu.getu();
-    // 输出结果
-    // 保存输出到文件
+
     auto U =ACu.getU();
     saveDataToFile(U, "u_test_data.txt");
     system("pause");

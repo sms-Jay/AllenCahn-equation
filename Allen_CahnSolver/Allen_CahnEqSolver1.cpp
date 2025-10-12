@@ -15,9 +15,9 @@ double source(double u){
 bool is_stable(double dt, double dx, double dy){
     double mu_x = dt/(dx*dx);
     double mu_y = dt/(dy*dy);
-    return mu_x + mu_y <= 0.5; // ÎÈ¶¨ÐÔÌõ¼þ
+    return mu_x + mu_y <= 0.5; // ï¿½È¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 }
-// Ç°ÏòÅ·À­·¨Çó½â¶þÎ¬Allen-CahnÈÈ·½³Ì£ºu_t = \Delta u - f(u)/\epsilon^2.ÇøÓòÎª[0,1]^2 * [0,T];ÖÜÆÚ±ß½çÌõ¼þ
+// Ç°ï¿½ï¿½Å·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î¬Allen-Cahnï¿½È·ï¿½ï¿½Ì£ï¿½u_t = \Delta u - f(u)/\epsilon^2.ï¿½ï¿½ï¿½ï¿½Îª[0,1]^2 * [0,T];ï¿½ï¿½ï¿½Ú±ß½ï¿½ï¿½ï¿½ï¿½ï¿½
 class Allen_CahnEqSolver{
     private:
         double T;
@@ -27,8 +27,8 @@ class Allen_CahnEqSolver{
         double dx;
         double dy;
         double dt;
-        double ep; // ¿ØÖÆ·ÇÏßÐÔÏîµÄÇ¿¶È
-        vector<vector<vector<double>>> u;//ÒÀ´ÎÎªx£¬y£¬t
+        double ep; // ï¿½ï¿½ï¿½Æ·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¿ï¿½ï¿½
+        vector<vector<vector<double>>> u;//ï¿½ï¿½ï¿½ï¿½Îªxï¿½ï¿½yï¿½ï¿½t
         vector<vector<vector<double>>> real_u;
 
     public:
@@ -38,7 +38,7 @@ class Allen_CahnEqSolver{
             dt = T/Nt;
             u.resize(Nx+1,vector<vector<double>>(Ny+1,vector<double>(Nt+1,0.0)));
             real_u.resize(Nx+1, vector<vector<double>>(Ny+1, vector<double>(Nt+1, 0.0)));
-            // ³õÊ¼»¯³õÊ¼Ìõ¼þ
+            // ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½
             for(int i=0;i<=Nx;i++){
                 for(int j=0;j<=Ny;j++){
                     double x = i*dx;
@@ -66,7 +66,7 @@ class Allen_CahnEqSolver{
         }
         
         
-        const vector<vector<vector<double>>>& getsolution() const{
+        const vector<vector<vector<double>>>& getsolution() const& {
             return u;
         }
 
@@ -85,7 +85,7 @@ int main(){
     Allen_CahnEqSolver solver(T, Nx, Ny, Nt, ep);
     solver.solve();
     auto u = solver.getsolution();
-    // Êä³ö½á¹û
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     for(int k=0;k<=Nt;k++){
         for(int i=0;i<=Nx;i++){
             for(int j=0;j<=Ny;j++){
