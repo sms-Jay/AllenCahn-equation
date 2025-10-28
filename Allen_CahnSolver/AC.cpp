@@ -17,6 +17,7 @@ double ini_3(double x, double y){
     return (double) rand() / (RAND_MAX + 1.0);
 }
 double F(double t,double theta){
+    return t*log(t)+(1-t)*log(1-t)+theta*t*(1-t);
     if (t>0 && t<1e-16) return (1-t)*log(1-t)+theta*t*(1-t);
     else if (t<1 && t>1-1e-16) return t*log(t)+theta*t*(1-t);
     else if (t>1e-16 && t<1-1e-16) return t*log(t)+(1-t)*log(1-t)+theta*t*(1-t);
@@ -66,7 +67,7 @@ void saveDataToFile(const vector<vector<vector<double>>>& u, const string& filen
     outFile.close();
     cout << "Data Saved to: " << filename << endl;
 }
-class AC{
+class allen_cahn_eqution{
     private:
         int Nt;
         double dt;
@@ -86,7 +87,7 @@ class AC{
         vector<double> energy;
 
     public:
-        AC(double time, int time_steps, int grid_x, int grid_y,  double epsilon):dt(time),Nt(time_steps),Nx(grid_x),Ny(grid_y),ep(epsilon){
+        allen_cahn_eqution(double time, int time_steps, int grid_x, int grid_y,  double epsilon):dt(time),Nt(time_steps),Nx(grid_x),Ny(grid_y),ep(epsilon){
             dx = 2.0/Nx;
             dx2 = dx*dx;
             dy = 2.0/Ny;
@@ -162,13 +163,13 @@ class AC{
             for(int i=0;i<Nx;i++){
                 for(int j=0;j<Ny;j++){
                     int idx = i*Ny+j;
-                    b[idx] = Un[idx]/dt -Y[idx] +rho*U2[idx];
+                    b[idx] = Un[idx]/dt -Y[idx] + rho*U2[idx];
                 }
             }
             return b;
         }
         // Symmetric and Positive definenite, consider FFT or PCG
-        vector<double> CG(const vector<double>& b, vector<double>& x, double tol, double rho, int max_iter){
+        vector<double> conjugate_gradient(const vector<double>& b, vector<double>& x, double tol, double rho, int max_iter){
             vector<double> r = b;
             vector<double> p = r;
             vector<double> Ap(N);
@@ -187,7 +188,7 @@ class AC{
                 double rnew = dotProduct(r,r);
                 double r_norm = sqrt(rnew);
                 if(r_norm/b_norm < tol) {
-                    // cout<<"CG converge at "<<k<<endl;
+                    // cout<<"conjugate_gradient converge at "<<k<<endl;
                     break;
                 }
                 double beta = rnew/rold;
@@ -195,7 +196,7 @@ class AC{
                     p[i] = r[i] + beta*p[i];
                 }
                 rold = rnew;
-                if(k==max_iter) cout<<"CG not converge."<<endl;
+                if(k==max_iter) cout<<"conjugate_gradient not converge."<<endl;
             }
             return x;
         }
@@ -262,7 +263,7 @@ class AC{
             for(int k=1;k<=max_iter;k++){
                 // U1
                 auto b = rhs(Un, Y, rho, U_2);
-                U_1 = CG(b, U_1, 1e-8, rho, 1e5);
+                U_1 = conjugate_gradient(b, U_1, 1e-8, rho, 1e5);
                 // U2 Y r s
                 double r = 0.0;//primal feasibility
                 double s = 0.0;//dual feasibility
@@ -315,7 +316,7 @@ class AC{
                 auto Un = u[n];
                 energy[n]=Energy(Un);
                 cout<<energy[n]<<endl;
-                u[n+1] = ADMM(Un,1e6,1e-3);
+                u[n+1] = ADMM(Un,1e6,1e-8);
             }
             energy[Nt]=Energy(u[Nt]);
             cout<<energy[Nt]<<endl;
@@ -343,12 +344,12 @@ class AC{
 };
 
 int main(){
-    double dt = 1e10;
+    double dt = 1;
     int Nx = 100;
     int Ny = 100;
     int Nt = 30;
-    double ep = 0.05;
-    AC ACu(dt, Nt, Nx, Ny, ep);
+    double ep = 0.005;
+    allen_cahn_eqution ACu(dt, Nt, Nx, Ny, ep);
     ACu.solve();
     auto u = ACu.getu();
 
