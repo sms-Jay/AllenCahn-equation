@@ -392,7 +392,7 @@ public:
             cout << "Time step " << n << "/" << Nt << ", Energy = " << Energy[n] << endl;
             energy_file << n << " " << Energy[n] << endl;
             
-            u[n+1] = admm(Un, 1000, 1e-8);  
+            u[n+1] = admm(Un, 1000, 1e-6);  
             
             // Protection
             for (int i = 0; i < N; i++) {
@@ -438,10 +438,10 @@ public:
 
 int main(){
     // Set up
-    double dt = 1e10;  
-    int Nx = 100;
-    int Ny = 100;
-    int Nt = 50;      
+    double dt = 1;  
+    int Nx = 1000;
+    int Ny = 1000;
+    int Nt = 1;      
     double ep = 0.05;
     
     allen_cahn_equation_admm allen_cahn_u(dt, Nt, Nx, Ny, ep);

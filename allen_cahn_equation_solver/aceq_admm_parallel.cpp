@@ -5,12 +5,12 @@
 #include <algorithm>
 #include <iomanip>
 #include <ctime>
-#include <omp.h>  // 添加OpenMP头文件
+#include <omp.h>
 
 using namespace std;
 
 const double PI = 3.1415926535897932384626;
-const double EPS = 1e-24;  // numerical protection constant
+const double EPS = 1e-24;
 
 double ini_1(double x, double y){
     return (1+sin(2*PI*x)*sin(2*PI*y))/3.0;
@@ -22,17 +22,14 @@ double ini_2(double x, double y){
 }
 
 double ini_3(double x, double y){
-    // generate random numbers in (0.01,0.99) range to avoid boundary issues
     return 0.01 + 0.98 * ((double)rand() / (RAND_MAX + 1.0));
 }
 
-// safe F
 double F(double t, double theta){
-    t = max(EPS, min(1.0 - EPS, t));  // protection
+    t = max(EPS, min(1.0 - EPS, t));
     return t*log(t) + (1-t)*log(1-t) + theta*t*(1-t);
 }
 
-// Safe log function
 double safe_log_ratio(double u) {
     u = max(EPS, min(1.0 - EPS, u));
     return log(u / (1 - u));
@@ -80,7 +77,7 @@ void saveDataToFile(const vector<vector<vector<double>>>& u, const string& filen
     cout << "Data Saved to: " << filename << endl;
 }
 
-class allen_cahn_equation_admm{
+class allen_cahn_equation_admm {
 private:
     int Nt;
     double dt;
@@ -115,8 +112,7 @@ public:
         U.resize(Nt + 1, vector<vector<double>>(Nx, vector<double>(Ny, 0.0)));
         Energy.resize(Nt + 1, 0.0);
         
-        // 并行初始化
-        #pragma omp parallel for collapse(2)
+        #pragma omp parallel for collapse(2) schedule(static)
         for(int i = 0; i < Nx; i++){
             for(int j = 0; j < Ny; j++){
                 double x = i * dx - 1.0;
@@ -129,7 +125,8 @@ public:
     
     double vec_dot(const vector<double>& a, const vector<double>& b){
         double result = 0.0;
-        #pragma omp parallel for reduction(+:result)
+      
+        #pragma omp parallel for reduction(+:result) schedule(static, 256)
         for(int i = 0; i < a.size(); i++){
             result += a[i] * b[i];
         }
@@ -138,7 +135,8 @@ public:
 
     double energy(const vector<double>& U_vec){
         double E = 0.0;
-        #pragma omp parallel for collapse(2) reduction(+:E)
+      
+        #pragma omp parallel for collapse(2) reduction(+:E) schedule(static)
         for(int i = 0; i < Nx; i++){
             for(int j = 0; j < Ny; j++){
                 int ip = (i + 1) % Nx;
@@ -161,7 +159,8 @@ public:
 
     vector<double> mat_vec_product(const vector<double>& U_vec, double rho){
         vector<double> AU(N, 0.0);
-        #pragma omp parallel for collapse(2)
+
+        #pragma omp parallel for collapse(2) schedule(static)
         for(int i = 0; i < Nx; i++){
             for(int j = 0; j < Ny; j++){
                 int idx = i * Ny + j;
@@ -185,7 +184,8 @@ public:
     
     vector<double> rhs(const vector<double>& Un, const vector<double>& Y, double rho, const vector<double>& U2){
         vector<double> b(N, 0.0);
-        #pragma omp parallel for
+        
+        #pragma omp parallel for schedule(static)
         for(int i = 0; i < N; i++){
             b[i] = Un[i] / dt - Y[i] + rho * U2[i];
         }
@@ -198,7 +198,8 @@ public:
         vector<double> p = r;
         
         auto Ax0 = mat_vec_product(x0, rho);
-        #pragma omp parallel for
+        
+        #pragma omp parallel for schedule(static)
         for(int i = 0; i < N; i++){
             r[i] = b[i] - Ax0[i];
             p[i] = r[i];
@@ -218,7 +219,8 @@ public:
             }
             
             double alpha = rold / pAp;
-            #pragma omp parallel for
+            
+            #pragma omp parallel for schedule(static)
             for (int i = 0; i < N; i++){
                 x[i] += alpha * p[i];
                 r[i] -= alpha * Ap[i];
@@ -228,12 +230,11 @@ public:
             double r_norm = sqrt(rnew);
             
             if(r_norm / b_norm < tol) {
-                // cout << "CG converge at " << k << ", residual = " << r_norm / b_norm << endl;
                 break;
             }
             
             double beta = rnew / rold;
-            #pragma omp parallel for
+            #pragma omp parallel for schedule(static)
             for (int i = 0; i < N; i++){
                 p[i] = r[i] + beta * p[i];
             }
@@ -251,21 +252,18 @@ public:
         double fu, dfu;
         
         for(int iter = 1; iter <= 50; iter++){
-            // Protect calculation
             u = max(EPS, min(1.0 - EPS, u));
             
             fu = safe_log_ratio(u) + theta * (1 - 2 * un) - y - rho * (u1 - u);
             dfu = 1.0 / (u * (1 - u)) + rho;
             
             if (fabs(dfu) < 1e-14) {
-                // Safe update
                 u = max(EPS, min(1.0 - EPS, u + 0.001 * (0.5 - u)));
                 continue;
             }
             
             double u_new = u - fu / dfu;
             
-            // limit update magnitude to avoid drastic changes
             double max_change = 0.1;
             if (fabs(u_new - u) > max_change) {
                 u_new = u + copysign(max_change, u_new - u);
@@ -274,14 +272,12 @@ public:
             u_new = max(EPS, min(1.0 - EPS, u_new));
             
             if(fabs(f(u_new, u1, un, y, rho)) < 1e-10){
-                // cout << "newton converged at " << iter << " iterations." << endl;
                 return u_new;
             }
             
             u = u_new;
             
             if(iter == 50) {
-                // bisection as a backup
                 u = safe_bisection(u1, un, y, rho);
                 break;
             }
@@ -289,14 +285,12 @@ public:
         return u;
     }
     
-    // bisection as a backup
     double safe_bisection(double u1, double un, double y, double rho) {
         double a = EPS, b = 1.0 - EPS;
         double fa = f(a, u1, un, y, rho);
         double fb = f(b, u1, un, y, rho);
         
         if (fa * fb > 0) {
-            // no zero point
             return fabs(fa) < fabs(fb) ? a : b;
         }
         
@@ -325,8 +319,8 @@ public:
     }
 
     vector<double> admm(vector<double>& Un, int max_iter, double tolerance){
-        double rho = 10.0;  // Bigger penalty parameter for stability and faster conjugate gradient
-        double tau = 1.8;   // step size for Lagrange multiplier Y
+        double rho = 10.0;
+        double tau = 1.8;
         
         auto U_1 = Un;
         auto U_2 = Un;
@@ -340,25 +334,19 @@ public:
             auto b = rhs(Un, Y, rho, U_2);
             U_1 = conjugate_gradient(b, U_1, 1e-10, rho, 1000);
             
-            // Protection - 并行化保护操作
-            #pragma omp parallel for
+            #pragma omp parallel for schedule(static)
             for (int i = 0; i < N; i++) {
                 U_1[i] = max(EPS, min(1.0 - EPS, U_1[i]));
             }
             
-            // Solve U2 and upgrade Y - 并行化关键循环
-            double r = 0.0; // primal feasibility
-            double s = 0.0; // dual feasibility
+            double r = 0.0;
+            double s = 0.0;
             
-            #pragma omp parallel for reduction(+:r, s)
+            #pragma omp parallel for reduction(+:r, s) schedule(static)
             for(int i = 0; i < N; i++){
-                // newton method to solve U2
                 U_2_new[i] = newton(U_2[i], U_1[i], Un[i], Y[i], rho);
-                
-                // Update Y
                 Y[i] = Y[i] + tau * rho * (U_1[i] - U_2_new[i]);
                 
-                // residual
                 r += (U_1[i] - U_2_new[i]) * (U_1[i] - U_2_new[i]);
                 s += (U_2[i] - U_2_new[i]) * (U_2[i] - U_2_new[i]);
             }
@@ -367,7 +355,6 @@ public:
             r = sqrt(r);
             s = sqrt(s);
             
-            // check convergence
             if(max(r, s) < tolerance) {
                 Un = U_2;
                 cout << "ADMM converge at " << k << " iterations." << endl;
@@ -392,9 +379,8 @@ public:
         ofstream energy_file("energy_admm.txt");
         energy_file << fixed << setprecision(12);
         
-        // 设置线程数并显示信息
         int num_threads = omp_get_max_threads();
-        cout << "并行计算使用 " << num_threads << " 个线程" << endl;
+        cout << "Using " << num_threads << " threads" << endl;
         
         for(int n = 0; n < Nt; n++){
             auto Un = u[n];
@@ -405,13 +391,11 @@ public:
             
             u[n+1] = admm(Un, 1000, 1e-8);  
             
-            // Protection - 并行化
-            #pragma omp parallel for
+            #pragma omp parallel for schedule(static)
             for (int i = 0; i < N; i++) {
                 u[n+1][i] = max(EPS, min(1.0 - EPS, u[n+1][i]));
             }
             
-            // check: energy decrease
             double next_energy = energy(u[n+1]);
             if (next_energy > Energy[n] + 1e-8) {
                 cout << "WARNING: Energy increased at time step " << n 
@@ -427,7 +411,7 @@ public:
     
     vector<vector<double>> vec_to_arr(const vector<double>& a){
         vector<vector<double>> A(Nx, vector<double>(Ny, 0.0));
-        #pragma omp parallel for collapse(2)
+        #pragma omp parallel for collapse(2) schedule(static)
         for(int i = 0; i < Nx; i++){
             for(int j = 0; j < Ny; j++){
                 int idx = i * Ny + j;
@@ -442,7 +426,7 @@ public:
     }
     
     vector<vector<vector<double>>>& getU(){
-        #pragma omp parallel for
+        #pragma omp parallel for schedule(static)
         for(int n = 0; n <= Nt; n++){
             U[n] = vec_to_arr(u[n]);
         }
@@ -451,14 +435,14 @@ public:
 };
 
 int main(){
-    // 设置OpenMP线程数
-    omp_set_num_threads(omp_get_max_threads());
+
+    int desired_threads = 16;  
+    omp_set_num_threads(desired_threads);
     
-    // Set up
-    double dt = 1e10;  
-    int Nx = 100;
-    int Ny = 100;
-    int Nt = 50;      
+    double dt = 1;  
+    int Nx = 1000;
+    int Ny = 1000;
+    int Nt = 1;      
     double ep = 0.05;
     
     allen_cahn_equation_admm allen_cahn_u(dt, Nt, Nx, Ny, ep);
@@ -471,8 +455,8 @@ int main(){
     auto U = allen_cahn_u.getU();
     saveDataToFile(U, "data_admm.txt");
     
-    cout << "并行ADMM CPU时间: " << cpu_time_used << " 秒" << endl;
-    cout << "按任意键继续..." << endl;
-    system("pause");
+    cout << "admm_parallel CPU time: " << cpu_time_used << " s." << endl;
+    
+    
     return 0;
 }

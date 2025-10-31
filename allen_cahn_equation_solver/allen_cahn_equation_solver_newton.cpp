@@ -7,7 +7,7 @@
 using namespace std;
 
 const double PI = 3.1415926535897932384626;
-const double EPS = 1e-32;  // numerical protection constant
+const double EPS = 1e-24;  // numerical protection constant
 
 double ini_1(double x, double y){
     return (1+sin(2*PI*x)*sin(2*PI*y))/3.0;
@@ -294,7 +294,7 @@ public:
             cout << "Time step " << n << "/" << Nt << ", Energy = " << Energy[n] << endl;
             energy_file << n << " " << Energy[n] << endl;
             
-            u[n+1] = newton(u_n, 1e-10, 1e3);  
+            u[n+1] = newton(u_n, 1e-10, 1e5);  
             
             // Protection
             for (int i = 0; i < N; i++) {
@@ -340,10 +340,10 @@ public:
 
 int main(){
     // Set up
-    double dt = 1e10;  
-    int Nx = 100;
-    int Ny = 100;
-    int Nt = 50;      
+    double dt = 1;  
+    int Nx = 1000;
+    int Ny = 1000;
+    int Nt = 1;      
     double ep = 0.05;
     
     allen_cahn_equation_newton allen_cahn_u(dt, Nt, Nx, Ny, ep);

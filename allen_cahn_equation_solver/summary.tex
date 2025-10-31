@@ -21,7 +21,7 @@
 \begin{itemize}
     \item $\log\left(\frac{u}{1-u}\right)$ 在 $u \to 0$ 或 $u \to 1$ 时产生无穷大
     \item 一个点的越界通过拉普拉斯算子传播到整个区域  
-    \item 形成"边界发散 $\to$ 迭代发散 $\to$ 能量上升"的恶性循环
+    \item 形成“边界发散 $\to$ 迭代发散 $\to$ 能量上升”的恶性循环
 \end{itemize}
 
 \section*{稳定性改进策略}
@@ -31,7 +31,7 @@
 \textbf{思路：在问题发生前拦截，而非事后处理}
 
 \begin{align*}
-&\text{const double EPS} = 10^{-12}\\
+&\text{const double EPS} = 10^{-24}\\
 &u_{\text{safe}} = \max(\text{EPS}, \min(1-\text{EPS}, u))\\
 &f_{\text{safe}}(u) = \log\left(\frac{u_{\text{safe}}}{1-u_{\text{safe}}}\right)
 \end{align*}

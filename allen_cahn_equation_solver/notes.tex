@@ -65,5 +65,23 @@ u_0(x,y)=\frac{1+\sin{2\pi x}\sin {2\pi y}}{3}
 \end{equation}
 和参数$\theta = 4.0$.用上述算法求解，发现效果良好，可以得到预期结果。
 \section{算法优势}
-猜测：在引入并行计算的模式下，ADMM的$U_2$子问题天然并行，受网格尺度影响更小，会体现出加速优势
+猜测：在引入并行计算的模式下，由于ADMM的$U_2$子问题天然并行，受网格尺度影响更小，在更小的网格尺度下会体现出加速优势，不同时间步长下可以通过调整罚函数因子改进运算速度
+\par 结果记录；取$dt=1$，$Nx=Ny=1000$，计算一个时间步，并行化程序用16个计算核心：
+\begin{table}
+    \centering
+    \begin{tabular}{c|c|c}
+    算法&cpu\_time(s)&主迭代次数(次)\\
+    \hline
+    admm & 140.955 & admm:52\\
+    \hline
+    admm\_parallel & 27.179 & admm:71\\
+    \hline
+    newton & 277.254 & newton:1445\\
+    \hline
+    newton\_parallel & 30.301 & newton:1508
+    \end{tabular}
+    \caption{数值结果}
+    \label{数值结果}
+\end{table}
+\\ 问题：采取的protection边界保护策略是否有道理？
 \end{document}
