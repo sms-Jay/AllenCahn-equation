@@ -122,7 +122,7 @@ public:
                 double x = i * dx - 1.0;
                 double y = j * dy - 1.0;
                 int idx = i * Ny + j;
-                u[0][idx] = ini_3(x, y);  
+                u[0][idx] = ini_2(x, y);  
             }
         }
 
@@ -263,7 +263,7 @@ public:
         auto u_k = u_n;
         for(int k = 1; k <= max_iter; k++){
             auto b_tilde = rhs_tilde(u_k,b);
-            auto u_new = conjugate_gradient(u_k, b_tilde, 1e-8, 1e3);
+            auto u_new = conjugate_gradient(u_k, b_tilde, 1e-6, 1e4);
             double r_norm = 0.0;
             for(int i = 0; i < N; i++){
                 u_new[i] = max(EPS, min(1.0 - EPS, u_new[i]));
@@ -294,7 +294,7 @@ public:
             cout << "Time step " << n << "/" << Nt << ", Energy = " << Energy[n] << endl;
             energy_file << n << " " << Energy[n] << endl;
             
-            u[n+1] = newton(u_n, 1e-10, 1e5);  
+            u[n+1] = newton(u_n, 1e-8, 1e5);  
             
             // Protection
             for (int i = 0; i < N; i++) {
@@ -340,10 +340,10 @@ public:
 
 int main(){
     // Set up
-    double dt = 1;  
-    int Nx = 1000;
-    int Ny = 1000;
-    int Nt = 1;      
+    double dt = 1e10;  
+    int Nx = 100;
+    int Ny = 100;
+    int Nt = 50;      
     double ep = 0.05;
     
     allen_cahn_equation_newton allen_cahn_u(dt, Nt, Nx, Ny, ep);

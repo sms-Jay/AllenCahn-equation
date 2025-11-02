@@ -136,6 +136,32 @@ public:
         return result;
     }
     
+
+    double residual(const vector<double>& u_n, const vector<double>& u_new){
+        double r_norm = 0.0;
+        #pragma omp parallel for collapse(2) reduction(+:r_norm) schedule(static)
+        for(int i = 0; i < Nx; i++){
+            for(int j = 0; j < Ny; j++){
+                int ip = (i + 1) % Nx;
+                int im = (i - 1 + Nx) % Nx;
+                int jp = (j + 1) % Ny;
+                int jm = (j - 1 + Ny) % Ny;
+                int idx = i * Ny + j;
+                int idx_ip = ip * Ny + j;
+                int idx_im = im * Ny + j;
+                int idx_jp = i * Ny + jp;
+                int idx_jm = i * Ny + jm;
+
+                double laplace = (u_new[idx_ip] + u_new[idx_jp] - 4.0 * u_new[idx] + u_new[idx_im] + u_new[idx_jm]) / dx2;
+
+                double r = (u_new[idx] - u_n[idx]) / dt - ep2 * laplace + safe_log_ratio(u_new[idx]) + theta * (1.0 - 2.0 * u_n[idx]);
+                r_norm += r * r;
+            }
+        }
+        r_norm = sqrt(r_norm);
+        return r_norm;
+    }
+
     double energy(const vector<double>& U_vec){
         double E = 0.0;
         #pragma omp parallel for collapse(2) reduction(+:E) schedule(static)
@@ -246,7 +272,7 @@ public:
             if(r_norm / b_norm < tol) {
                 break;
             }
-            
+
             double beta = rnew / rold;
             #pragma omp parallel for schedule(static)
             for (int i = 0; i < N; i++){
@@ -263,7 +289,7 @@ public:
         
         for(int k = 1; k <= max_iter; k++){
             auto b_tilde = rhs_tilde(u_k, b);
-            auto u_new = conjugate_gradient(u_k, b_tilde, 1e-8, 1000);
+            auto u_new = conjugate_gradient(u_k, b_tilde, 1e-6, 1000);
             
             double r_norm = 0.0;
             #pragma omp parallel for reduction(+:r_norm) schedule(static)
@@ -299,13 +325,16 @@ public:
             cout << "Time step " << n << "/" << Nt << ", Energy = " << Energy[n] << endl;
             energy_file << n << " " << Energy[n] << endl;
             
-            u[n+1] = newton(u_n, 1e-10, 100000);  
+            u[n+1] = newton(u_n, 1e-7, 1e5);  
 
             #pragma omp parallel for schedule(static)
             for (int i = 0; i < N; i++) {
                 u[n+1][i] = max(EPS, min(1.0 - EPS, u[n+1][i]));
             }
             
+            double r_norm = residual(u[n], u[n+1]);
+            cout << "residual: " << r_norm << endl;
+
             double next_energy = energy(u[n+1]);
             if (next_energy > Energy[n] + 1e-8) {
                 cout << "WARNING: Energy increased at time step " << n 
@@ -350,7 +379,7 @@ int main(){
     omp_set_num_threads(desired_threads);
     
     
-    double dt = 1;  
+    double dt = 1e10;  
     int Nx = 1000;
     int Ny = 1000;
     int Nt = 1;      

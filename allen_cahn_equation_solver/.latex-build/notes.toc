@@ -1,6 +1,10 @@
-\contentsline {section}{\numberline {1}算法设计}{1}{section.1}%
-\contentsline {subsection}{\numberline {1.1}法一：近似}{2}{subsection.1.1}%
-\contentsline {subsection}{\numberline {1.2}法二：Newton}{2}{subsection.1.2}%
-\contentsline {section}{\numberline {2}数值算例}{2}{section.2}%
-\contentsline {subsection}{\numberline {2.1}算例一}{2}{subsection.2.1}%
-\contentsline {section}{\numberline {3}算法优势}{2}{section.3}%
+\contentsline {section}{\numberline {1}问题描述}{1}{section.1}%
+\contentsline {section}{\numberline {2}数值算法}{2}{section.2}%
+\contentsline {subsection}{\numberline {2.1}能量凸分裂格式}{2}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}基于能量泛函的ADMM格式}{2}{subsection.2.2}%
+\contentsline {section}{\numberline {3}高维Newton迭代}{3}{section.3}%
+\contentsline {section}{\numberline {4}数值算例}{3}{section.4}%
+\contentsline {subsection}{\numberline {4.1}算例一：随机初值}{3}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}算例二：光滑初值}{3}{subsection.4.2}%
+\contentsline {section}{\numberline {5}实验现象}{3}{section.5}%
+\contentsline {section}{\numberline {6}算法优势}{4}{section.6}%

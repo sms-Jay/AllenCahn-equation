@@ -119,7 +119,7 @@ public:
                 double x = i * dx - 1.0;
                 double y = j * dy - 1.0;
                 int idx = i * Ny + j;
-                u[0][idx] = ini_3(x, y);  
+                u[0][idx] = ini_2(x, y);  
             }
         }
     }
@@ -226,7 +226,7 @@ public:
                 // cout << "CG converge at " << k << ", residual = " << r_norm / b_norm << endl;
                 break;
             }
-            
+
             double beta = rnew / rold;
             for (int i = 0; i < N; i++){
                 p[i] = r[i] + beta * p[i];
@@ -332,7 +332,7 @@ public:
         for(int k = 1; k <= max_iter; k++){
             // CG to solve U1 
             auto b = rhs(Un, Y, rho, U_2);
-            U_1 = conjugate_gradient(b, U_1, 1e-8, rho, 1000);
+            U_1 = conjugate_gradient(b, U_1, 1e-6, rho, 1000);
             
             // Protection
             for (int i = 0; i < N; i++) {
@@ -438,10 +438,10 @@ public:
 
 int main(){
     // Set up
-    double dt = 1;  
-    int Nx = 1000;
-    int Ny = 1000;
-    int Nt = 1;      
+    double dt = 1e10;  
+    int Nx = 100;
+    int Ny = 100;
+    int Nt = 50;      
     double ep = 0.05;
     
     allen_cahn_equation_admm allen_cahn_u(dt, Nt, Nx, Ny, ep);
