@@ -22,14 +22,15 @@
 \par 定义$g(u) = \log{(\frac{u}{1-u})}$，$G(u) = u\log{u}+(1-u)\log{(1-u)}$，$F(u) = u\log{u}+(1-u)\log{(1-u)}+\theta (u-u^2)$，
 则$F'(u)=f(u)$，$G'(u)=g(u)$。
 \section{数值算法}
-\subsection{能量凸分裂格式}
+\subsection{凸分裂格式}
+
 利用时间向后Euler，空间五点差分格式 \begin{equation}
     \frac{U^{n+1}-U^n}{dt} - \varepsilon^2 \Delta_h U^{n+1} + f(U^{n+1})=0;
 \end{equation}
-做一步能量凸分裂，得到格式\begin{equation}
+做一步凸分裂，得到格式\begin{equation}
     \frac{U^{n+1}-U^n}{dt} - \varepsilon^2 \Delta_h U^{n+1} + g(U^{n+1}) +\theta (1-2U^n)=0;
 \end{equation}
-\subsection{基于能量泛函的ADMM格式}
+\subsection{基于泛函的ADMM格式}
 定义泛函\begin{equation}
     J(U) = \int_{\Omega} ( \frac{\|U-U^n\|^2}{2dt}+  \frac{1}{2}\varepsilon^2 |\nabla U|^2  + G(U)  + \theta <U,1-2U^n>) dx;
 \end{equation} 
@@ -70,6 +71,7 @@
     \log (\frac{u_2^{k+1}}{1-u_2^{k+1}})+\theta (1-2u^n) - y^k -\rho (u_1^{k+1}-u_2^{k+1})=0;
 \end{equation}
 可以用一维Newton法进行求根。
+\\罚函数因子$\rho$进行自适应动态调节。
 \section{高维Newton迭代}
 仍然基于凸分裂格式，视其为高维非线性方程求根问题：在这里令\begin{equation}
 b=\frac{1}{dt}U^n-\theta(1-2U^n)
@@ -96,50 +98,45 @@ u_0(x,y)=\frac{1+\sin{2\pi x}\sin {2\pi y}}{3}
 和参数$\theta = 4.0$.
 \section{实验现象}
 \begin{itemize}
-    \item 对于初值条件1，newton法的CG收敛很慢！原因是正定矩阵条件数相比admm的CG太大：admm的CG有$\rho$进行调节
+    \item 对于算例二，newton法的CG收敛很慢，原因是正定矩阵条件数相比admm的CG太大，而admm的CG有$\rho$进行调节。
     \item 相同参数下，串行newton可能出现CG迭代不收敛的情况，并行版本不会，可能是因为并行版本不同的浮点数运算方法导致避免了某些数值误差
 \end{itemize}
 \section{算法优势}
 猜测：在引入并行计算的模式下，由于ADMM的$U_2$子问题天然并行，受网格尺度影响更小，在更小的网格尺度下会体现出加速优势，不同时间步长下可以通过调整罚函数因子改进运算速度
-\par 结果记录；\begin{itemize}
-\item 随机初值，取$dt=1e10$，$Nx=Ny=1000$，计算一个时间步，并行化程序用16个计算核心：
+\par 结果记录:取$dt=1e10$，$Nx=Ny=1024$，计算一个时间步，并行化程序用16个计算核心：注意当阈值取$1e-8$时能量下降才一致
+\begin{itemize}
+\item 随机初值
 \begin{table}
     \centering
     \begin{tabular}{c|c|c|c|c|c}
     算法&判断收敛阈值&cpu\_time(s)&主迭代次数(次)& 能量 &残量\\
     \hline
-    admm & 1e-6 & 87.211 & admm:43 & 1.2331\\
+    truncated\_admm & 1e-6 & 17.521 & admm:71 & 1.23249 & 2.04158e-05\\
+    \hline 
+    non\_cg\_admm  & 1e-6 & 18.912 & admm:26 & 1.23249 & 3.66484e-05\\
+    \hline 
+    non\_fft\_admm  & 1e-6 & 8.907 & admm:27 & 1.23249 & 2.91842e-05\\
     \hline
-    admm\_parallel & 1e-6 & 10.834 & admm:44 & 1.2331 & 0.00148471\\
-    \hline
-    newton & 1e-8 & 321.924 & newton:1633 & 1.2331\\
-    \hline
-    newton & 1e-7 & 100.303 & newton:407 & 1.2331\\
-    \hline
-    newton\_parallel & 1e-8 & 28.991 & newton:1477 & 1.2331 & 2.49905e-05\\
-    \hline
-    newton\_parallel & 1e-7 & 10.788 & newton:389 & 1.2331 & 0.000249798\\
+    newton & 1e-8 & 2.963 & newton:5 & 1.23249 & 1.85867e-05\\
+
     \end{tabular}
     \caption{随机初值数值结果}
     \label{随机初值数值结果}
 \end{table}
-\item 光滑初值，取$dt=1e10$，$Nx=Ny=1000$，计算一个时间步，并行化程序用16个计算核心：注意当阈值取$1e-8$时能量下降才一致
+\item 光滑初值
 \begin{table}
     \centering
     \begin{tabular}{c|c|c|c|c|c}
     算法&判断收敛阈值&cpu\_time(s)&主迭代次数(次)& 能量 & 残量\\
     \hline
-    admm & 1e-6& 113.87 & admm:65 & 0.595444\\
+    truncated\_admm & 1e-6 & 15.496 & admm:82 & 0.595444 & 4.07057e-05\\
+    \hline 
+    non\_cg\_admm  & 1e-6 & 19.68 & admm:41 & 0.595444 & 3.30783e-05\\
+    \hline 
+    non\_fft\_admm  & 1e-6 & 10.935 & admm:42 & 0.595444 & 2.18749e-05\\
     \hline
-    admm\_parallel & 1e-6 & 12.81 & admm:65 & 0.595444 & 0.00209806\\
-    \hline
-    newton &  1e-8 &  153.212 & newton:8 & 0.59545\\
-    \hline
-    newton &  1e-7 &  153.316 & newton:8 & 0.59545\\
-    \hline
-    newton\_parallel & 1e-8 & 12.149 & newton:8 & 0.59545 & 122.292\\
-    \hline
-    newton\_parallel & 1e-7 & 12.979 & newton:7 & 0.59545 & 124.567
+    newton &  & 21.845 & newton:18 & 0.595444 & 1.02206e-05\\
+
     \end{tabular}
     \caption{光滑初值数值结果}
     \label{光滑初值数值结果}
