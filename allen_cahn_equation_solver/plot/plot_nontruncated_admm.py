@@ -76,7 +76,7 @@ def create_contour_plots(u, x, y, time_indices=None,time=1):
 def main():
     """主函数"""
     # 加载数据
-    data_file = "H:/undergraduate/scientific_research/phase_field_equation_simulation/allen_cahn_equation_solver/data_nontruncated_admm.txt"
+    data_file = "H:/undergraduate/scientific_research/phase_field_equation_simulation/allen_cahn_equation_solver/serial/data_nontruncated_admm.txt"
     if not os.path.exists(data_file):
         print(f"数据文件 {data_file} 不存在")
         print("请先运行C++程序生成数据")

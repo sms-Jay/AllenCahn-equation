@@ -122,7 +122,7 @@ public:
                 double x = i * dx - 1.0;
                 double y = j * dy - 1.0;
                 int idx = i * Ny + j;
-                u[0][idx] = ini_2(x, y);  
+                u[0][idx] = ini_3(x, y);  
             }
         }
 
