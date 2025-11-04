@@ -41,6 +41,10 @@ def load_data_from_file(filename):
     return u_data, x_data, y_data
 
 def create_contour_plots(u, x, y, time_indices=None,time=1):
+    
+    output_dir = 'results/plots'
+    os.makedirs(output_dir, exist_ok=True)
+    
     """创建等高线图"""
     if time_indices is None:
         time_indices = range(min(5, u.shape[0]))  # 默认显示前5个时间步
@@ -71,12 +75,14 @@ def create_contour_plots(u, x, y, time_indices=None,time=1):
         plt.colorbar(contour, ax=axes[i])
     
     plt.tight_layout()
-    plt.savefig(f"admm_t_{time}.png", dpi=1000)
+    # plt.savefig(f"admm_t_{time}.png", dpi=1000)
+    plt.savefig(os.path.join(output_dir, f"admm_t_{time}.png"), dpi=1000)
+    
 
 def main():
     """主函数"""
     # 加载数据
-    data_file = "H:/undergraduate/scientific_research/phase_field_equation_simulation/allen_cahn_equation_solver/serial/data_admm.txt"
+    data_file = "H:/undergraduate/scientific_research/allen_cahn_equation_simulation/serial/data_admm.txt"
     if not os.path.exists(data_file):
         print(f"数据文件 {data_file} 不存在")
         print("请先运行C++程序生成数据")
