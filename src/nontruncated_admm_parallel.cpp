@@ -18,6 +18,7 @@ double ini_1(double x, double y){
 }
 
 
+
 double ini_2(double x, double y){
     if(abs(x)<=0.35 && abs(y)<=0.35) return 1e-5;
     else return 1-1e-5;
