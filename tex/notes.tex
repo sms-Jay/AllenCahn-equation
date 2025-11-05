@@ -42,7 +42,7 @@
 \end{equation}
 和\begin{equation}
     F_2(U) =  \int_{\Omega} (G(U)  + \theta <U,1-2U^n> ) dx
-\end{equation}.
+\end{equation}
 此时，原格式等价于\begin{equation}
     \begin{cases}
     \min_{U_1,U_2} F_1(U_1) + F_2(U_2)\\
@@ -62,7 +62,7 @@
 第一个子问题有显式解：\begin{equation}
     (\frac{1}{dt}-\varepsilon^2 \Delta_h + \rho)U_1^{k+1} = \frac{1}{dt}u^n + \rho U_2^k - Y^k;
 \end{equation}
-于是可以用CG进行求解。
+于是可以用CG或FFT进行求解，数值实验发现FFT更高效。
 \par 第二个子问题的解满足\begin{equation}
     \log (\frac{U_2^{k+1}}{1-U_2^{k+1}})+\theta (1-2U^n) - Y^k -\rho (U_1^{k+1}-U_2^{k+1})=0;
 \end{equation}
@@ -143,5 +143,4 @@ u_0(x,y)=\frac{1+\sin{2\pi x}\sin {2\pi y}}{3}
 \end{table}
 
 \end{itemize}
-问题：采取的protection边界保护策略是否有道理？
 \end{document}

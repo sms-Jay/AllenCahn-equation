@@ -17,7 +17,7 @@ private:
     const double PI = 3.1415926535897932384626;
 
 public:
-    // 构造函数
+    // initialize
     FFT2DSolver(int grid_x, int grid_y, double delta_x, double delta_y) 
         : Nx(grid_x), Ny(grid_y), dx(delta_x), dy(delta_y) {
         N = Nx * Ny;
@@ -26,7 +26,7 @@ public:
         eigenvalues_cached = false;
     }
 
-    // 预计算拉普拉斯特征值（周期边界）
+    // the eigenvalues of Laplace operater
     void precompute_laplace_eigenvalues() {
         if (eigenvalues_cached) return;
         
@@ -52,18 +52,18 @@ public:
         eigenvalues_cached = true;
     }
 
-    // 获取拉普拉斯特征值
+    // get eigenvalues
     const std::vector<std::complex<double>>& get_laplace_eigenvalues() {
         precompute_laplace_eigenvalues();
         return cached_laplace_eigenvalues;
     }
 
-    // 1D FFT (Cooley-Tukey算法)
+    // 1D FFT 
     void fft_1d(std::vector<std::complex<double>>& x, bool inverse) const {
         int n = x.size();
         if (n <= 1) return;
         
-        // 位反转重排
+        // bit reverse
         for (int i = 1, j = 0; i < n; i++) {
             int bit = n >> 1;
             for (; j >= bit; bit >>= 1) {
@@ -75,7 +75,7 @@ public:
             }
         }
         
-        // 迭代计算FFT
+        // Iterative FFT
         for (int len = 2; len <= n; len <<= 1) {
             double angle = 2 * PI / len * (inverse ? 1 : -1);
             std::complex<double> wlen(std::cos(angle), std::sin(angle));
@@ -92,7 +92,7 @@ public:
             }
         }
         
-        // 逆变换需要归一化
+        // normalize if inverse 
         if (inverse) {
             for (int i = 0; i < n; i++) {
                 x[i] /= n;
@@ -105,7 +105,7 @@ public:
         std::vector<std::complex<double>> output(N);
         std::vector<std::complex<double>> temp(N);
         
-        // 对每一行进行FFT
+        // row FFT
         #pragma omp parallel for schedule(dynamic)
         for (int i = 0; i < Nx; i++) {
             std::vector<std::complex<double>> row(Ny);
@@ -118,7 +118,7 @@ public:
             }
         }
         
-        // 对每一列进行FFT
+        // col FFT
         #pragma omp parallel for schedule(dynamic)
         for (int j = 0; j < Ny; j++) {
             std::vector<std::complex<double>> col(Nx);
@@ -134,7 +134,6 @@ public:
         return output;
     }
 
-    // 实数输入的2D FFT（自动转换为复数）
     std::vector<std::complex<double>> fft_2d_real(const std::vector<double>& input, bool inverse) const {
         std::vector<std::complex<double>> complex_input(N);
         #pragma omp parallel for schedule(static)
@@ -144,17 +143,17 @@ public:
         return fft_2d(complex_input, inverse);
     }
 
-    // 求解线性系统: (alpha * I - beta * Laplace) * x = b
+    // solve linear equation: (alpha * I - beta * Laplace) * x = b
     std::vector<double> solve_linear_system(const std::vector<double>& b, 
                                           double alpha, double beta = 1.0) {
         precompute_laplace_eigenvalues();
         
         std::vector<double> x(N, 0.0);
         
-        // 转换到频率域
+        // frequency domain
         auto b_freq = fft_2d_real(b, false);
         
-        // 在频率域求解
+        // solve in the frequency domain
         std::vector<std::complex<double>> x_freq(N);
         #pragma omp parallel for schedule(static)
         for(int i = 0; i < N; i++) {
@@ -167,10 +166,10 @@ public:
             }
         }
         
-        // 转换回空间域
+        // Spatial Domain
         auto x_complex = fft_2d(x_freq, true);
         
-        // 提取实部
+        // real part
         #pragma omp parallel for schedule(static)
         for(int i = 0; i < N; i++) {
             x[i] = x_complex[i].real();
@@ -179,12 +178,12 @@ public:
         return x;
     }
 
-    // 获取网格信息
+    // grid points
     int get_total_size() const { return N; }
     int get_nx() const { return Nx; }
     int get_ny() const { return Ny; }
     
-    // 清理缓存
+    // clear cache
     void clear_cache() {
         cached_laplace_eigenvalues.clear();
         eigenvalues_cached = false;
