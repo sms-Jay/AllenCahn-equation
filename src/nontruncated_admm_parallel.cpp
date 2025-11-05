@@ -10,6 +10,7 @@
 #include "fft_2d_solver.h"
 using namespace std;
 
+
 const double PI = 3.1415926535897932384626;
 const double EPS = 1e-24;
 
