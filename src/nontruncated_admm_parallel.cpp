@@ -98,7 +98,6 @@ private:
 
     FFT2DSolver fft_solver;
 
-
 public:
     allen_cahn_equation_admm(double time, int time_steps, int grid_x, int grid_y, double epsilon)
         : dt(time), Nt(time_steps), Nx(grid_x), Ny(grid_y), ep(epsilon) ,
