@@ -62,7 +62,7 @@
 第一个子问题有显式解：\begin{equation}
     (\frac{1}{dt}-\varepsilon^2 \Delta_h + \rho)U_1^{k+1} = \frac{1}{dt}u^n + \rho U_2^k - Y^k;
 \end{equation}
-于是可以用CG或FFT进行求解，数值实验发现FFT更高效。
+于是可以用CG或FFT进行求解，数值实验发现FFT更高效，但是只针对2的幂次。
 \par 第二个子问题的解满足\begin{equation}
     \log (\frac{U_2^{k+1}}{1-U_2^{k+1}})+\theta (1-2U^n) - Y^k -\rho (U_1^{k+1}-U_2^{k+1})=0;
 \end{equation}
